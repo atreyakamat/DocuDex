@@ -1,0 +1,92 @@
+version: '3.9'
+
+services:
+  # ─── Infrastructure ───────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: docudex-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: docudex
+      POSTGRES_PASSWORD: docudex_secret
+      POSTGRES_DB: docudex
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docudex"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: docudex-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Application Services ─────────────────────────────
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: docudex-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://docudex:docudex_secret@postgres:5432/docudex
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: super_secret_jwt_key_change_in_prod_min_32_chars
+      JWT_REFRESH_SECRET: super_secret_refresh_key_change_in_prod_32ch
+      JWT_EXPIRES_IN: "15m"
+      JWT_REFRESH_EXPIRES_IN: "7d"
+      AI_SERVICE_URL: http://ai-service:8000
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: "52428800"
+      CORS_ORIGIN: "http://localhost:3000"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ai-service:
+    build:
+      context: ./apps/ai-service
+      dockerfile: Dockerfile
+    container_name: docudex-ai
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5000
+    container_name: docudex-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
