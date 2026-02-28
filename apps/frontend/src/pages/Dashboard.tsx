@@ -74,7 +74,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div data-tour="stats-cards" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => (
           <div key={card.label} className="card flex items-center gap-4">
             <div className={`p-3 rounded-xl ${card.color}`}>
@@ -94,7 +94,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent documents */}
-        <div className="lg:col-span-2 card">
+        <div data-tour="recent-docs" className="lg:col-span-2 card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-gray-900">Recent Documents</h2>
             <Link to="/documents" className="text-sm text-primary-600 hover:underline">
@@ -138,7 +138,7 @@ export default function Dashboard() {
         </div>
 
         {/* Expiry alerts */}
-        <div className="card">
+        <div data-tour="expiry-alerts" className="card">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="h-5 w-5 text-yellow-500" />
             <h2 className="font-semibold text-gray-900">Expiry Alerts</h2>

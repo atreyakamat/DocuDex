@@ -11,9 +11,9 @@
  *   node dist/seed.js
  */
 import { Pool } from 'pg';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 dotenv.config();
 

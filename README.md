@@ -66,6 +66,9 @@
 | **Search & Filters** | Full-text search across document names, categories, statuses |
 | **Star / Organize** | Star important documents, organize into folders |
 | **Responsive UI** | Tailwind CSS design with sidebar navigation |
+| **Guided Tour** | Interactive step-by-step onboarding tour for new users (auto-starts on first login, replayable) |
+| **Seed Data** | One-command seeding of 100 realistic sample documents for demo/testing |
+| **One-Click Deploy** | `./deploy.sh` builds, starts, and seeds everything via Docker |
 
 ---
 
@@ -270,10 +273,31 @@ npm run dev
 
 ## Docker Deployment
 
-### Full stack with Docker Compose
+### One-Click Deploy (Recommended)
+
+```bash
+./deploy.sh
+```
+
+This single command builds all Docker images, starts services, waits for the database, and seeds it with **100 realistic sample documents** plus a demo user.
+
+After deployment:
+- **App**: http://localhost:3000
+- **Login**: `demo@docudex.com` / `Demo@12345`
+
+The guided tour will start automatically on first login.
+
+### Manual: Full stack with Docker Compose
 
 ```bash
 docker compose up --build
+```
+
+Then seed the database:
+
+```bash
+# From the backend workspace
+npm run seed --workspace=apps/backend
 ```
 
 This starts **5 services**:

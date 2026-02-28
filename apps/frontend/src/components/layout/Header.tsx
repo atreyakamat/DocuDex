@@ -65,7 +65,7 @@ export default function Header() {
 
       <div className="flex items-center gap-3">
         {/* Search */}
-        <form onSubmit={handleSearch} className="relative hidden md:block">
+        <form onSubmit={handleSearch} data-tour="search-bar" className="relative hidden md:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
@@ -78,7 +78,7 @@ export default function Header() {
         </form>
 
         {/* Notifications */}
-        <div className="relative" ref={notifRef}>
+        <div className="relative" ref={notifRef} data-tour="notifications">
           <button
             onClick={() => setNotifOpen((o) => !o)}
             className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"

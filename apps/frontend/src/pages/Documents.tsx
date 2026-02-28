@@ -86,7 +86,7 @@ export default function Documents() {
           <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
           <p className="text-gray-500 mt-1">{total} document{total !== 1 ? 's' : ''} total</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowUpload((v) => !v)}>
+        <button data-tour="upload-zone" className="btn-primary" onClick={() => setShowUpload((v) => !v)}>
           <Upload className="h-4 w-4" />
           Upload
         </button>
@@ -94,7 +94,7 @@ export default function Documents() {
 
       {/* Upload zone */}
       {showUpload && (
-        <div className="card">
+        <div data-tour="upload-zone" className="card">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium text-gray-900">Upload Documents</h3>
             <button onClick={() => setShowUpload(false)}>
@@ -146,6 +146,7 @@ export default function Documents() {
           <Loader2 className="h-8 w-8 animate-spin text-gray-300" />
         </div>
       ) : (
+        <div data-tour="document-grid">
         <DocumentGrid
           documents={documents}
           onView={(doc) => setViewingDoc(doc)}
@@ -154,6 +155,7 @@ export default function Documents() {
           onShare={(doc) => setSharingDoc(doc)}
           onStar={(doc) => starMutation.mutate({ id: doc.id, isStarred: !doc.isStarred })}
         />
+        </div>
       )}
 
       {/* Document viewer modal */}

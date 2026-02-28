@@ -1,8 +1,21 @@
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import GuidedTour from '../ui/GuidedTour';
+import { useTourStore } from '@/store/tourStore';
 
 export default function Layout() {
+  const { hasCompletedTour, startTour, isActive } = useTourStore();
+
+  // Auto-start tour for first-time users after a short delay
+  useEffect(() => {
+    if (!hasCompletedTour && !isActive) {
+      const t = setTimeout(startTour, 1500);
+      return () => clearTimeout(t);
+    }
+  }, []); // only on mount
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar />
@@ -14,6 +27,7 @@ export default function Layout() {
           </div>
         </main>
       </div>
+      <GuidedTour />
     </div>
   );
 }

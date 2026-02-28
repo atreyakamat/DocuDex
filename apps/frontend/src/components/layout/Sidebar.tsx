@@ -6,20 +6,23 @@ import {
   Settings,
   Shield,
   LogOut,
+  HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/store/authStore';
+import { useTourStore } from '@/store/tourStore';
 import toast from 'react-hot-toast';
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/documents', icon: FileText, label: 'Documents' },
-  { to: '/workflows', icon: GitBranch, label: 'Workflows' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true, tourId: 'sidebar-dashboard' },
+  { to: '/documents', icon: FileText, label: 'Documents', tourId: 'sidebar-documents' },
+  { to: '/workflows', icon: GitBranch, label: 'Workflows', tourId: 'sidebar-workflows' },
+  { to: '/settings', icon: Settings, label: 'Settings', tourId: 'sidebar-settings' },
 ];
 
 export default function Sidebar() {
   const { user, logout } = useAuthStore();
+  const { startTour, hasCompletedTour } = useTourStore();
 
   const handleLogout = async () => {
     await logout();
@@ -27,7 +30,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col">
+    <aside data-tour="sidebar" className="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
       <div className="px-6 py-5 border-b border-gray-200">
         <div className="flex items-center gap-2">
@@ -39,11 +42,12 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-4 py-4 space-y-1">
-        {navItems.map(({ to, icon: Icon, label, end }) => (
+        {navItems.map(({ to, icon: Icon, label, end, tourId }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
+            data-tour={tourId}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
@@ -57,6 +61,15 @@ export default function Sidebar() {
             {label}
           </NavLink>
         ))}
+
+        {/* Tour trigger */}
+        <button
+          onClick={startTour}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors mt-4 w-full"
+        >
+          <HelpCircle className="h-4 w-4" />
+          {hasCompletedTour ? 'Replay Tour' : 'Take a Tour'}
+        </button>
       </nav>
 
       {/* User profile */}
