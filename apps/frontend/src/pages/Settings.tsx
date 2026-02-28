@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Loader2, User, Lock, Bell, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/services/api';
-import toast from 'react-hot-toast';
+import { toast } from '@/store/toastStore';
 
 interface ProfileForm {
   firstName: string;

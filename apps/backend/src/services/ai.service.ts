@@ -26,6 +26,7 @@ export async function processDocumentWithAI(
       result = {
         classification: { documentType: 'OTHER', category: 'OTHER', confidence: 0 },
         extraction: { fields: {}, processingTime: 0 },
+        summary: undefined,
         processingStatus: 'failed',
       };
     }
@@ -37,6 +38,7 @@ export async function processDocumentWithAI(
       'category = $4',
       'classification_confidence = $5',
       'extracted_fields = $6',
+      'summary = $7',
       'updated_at = NOW()',
     ];
 
@@ -48,6 +50,7 @@ export async function processDocumentWithAI(
       result.classification.category || null,
       result.classification.confidence || null,
       extractedData,
+      result.summary || null,
     ];
 
     // Map known extracted fields to dedicated columns

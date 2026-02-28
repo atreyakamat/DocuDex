@@ -4,11 +4,14 @@ import { FileText } from 'lucide-react';
 
 interface Props {
   documents: Document[];
+  onView?: (doc: Document) => void;
   onDelete?: (id: string) => void;
   onDownload?: (id: string) => void;
+  onShare?: (doc: Document) => void;
+  onStar?: (doc: Document) => void;
 }
 
-export default function DocumentGrid({ documents, onDelete, onDownload }: Props) {
+export default function DocumentGrid({ documents, onView, onDelete, onDownload, onShare, onStar }: Props) {
   if (documents.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -25,8 +28,11 @@ export default function DocumentGrid({ documents, onDelete, onDownload }: Props)
         <DocumentCard
           key={doc.id}
           document={doc}
+          onView={onView}
           onDelete={onDelete}
           onDownload={onDownload}
+          onShare={onShare}
+          onStar={onStar}
         />
       ))}
     </div>

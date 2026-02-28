@@ -241,6 +241,7 @@ function mapDbDocument(row: Record<string, unknown>): Document {
       tags: (row.tags as string[]) || [],
       extractedFields: (row.extracted_fields as Record<string, string>) || {},
       classificationConfidence: (row.classification_confidence as number) || undefined,
+      summary: (row.summary as string) || undefined,
     },
     folderId: (row.folder_id as string) || undefined,
     isStarred: row.is_starred as boolean,

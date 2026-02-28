@@ -46,7 +46,7 @@ export const authApi = {
   logout: (refreshToken: string) => api.post('/auth/logout', { refreshToken }),
   refresh: (refreshToken: string) => api.post('/auth/refresh', { refreshToken }),
   me: () => api.get('/auth/me'),
-  updateProfile: (data: Record<string, unknown>) => api.patch('/auth/profile', data),
+  updateProfile: (data: Record<string, unknown>) => api.put('/auth/profile', data),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post('/auth/change-password', { currentPassword, newPassword }),
 };
@@ -74,7 +74,15 @@ export const documentsApi = {
   },
   update: (id: string, data: Record<string, unknown>) => api.patch(`/documents/${id}`, data),
   delete: (id: string) => api.delete(`/documents/${id}`),
-  download: (id: string) => api.get(`/documents/${id}/download`, { responseType: 'blob' }),
+  download: async (id: string): Promise<Blob> => {
+    const res = await api.get(`/documents/${id}/download`, { responseType: 'blob' });
+    return res.data as Blob;
+  },
+  createShare: (id: string, opts: { expiresInHours?: number; recipientEmail?: string }) =>
+    api.post(`/documents/${id}/share`, opts).then((r) => r.data.data as { shareUrl: string; token: string; expiresAt: string }),
+  listShares: (id: string) => api.get(`/documents/${id}/shares`),
+  revokeShare: (token: string) => api.delete(`/shares/${token}`),
+  star: (id: string, isStarred: boolean) => api.patch(`/documents/${id}`, { isStarred }),
 };
 
 // ─── Workflows API ───────────────────────────
@@ -95,4 +103,13 @@ export const notificationsApi = {
   list: () => api.get('/notifications'),
   markRead: (id: string) => api.patch(`/notifications/${id}/read`),
   markAllRead: () => api.patch('/notifications/read-all'),
+  delete: (id: string) => api.delete(`/notifications/${id}`),
+};
+
+// ─── Folders API ───────────────────────────
+export const foldersApi = {
+  list: () => api.get('/folders'),
+  create: (name: string, parentId?: string) => api.post('/folders', { name, parentId }),
+  rename: (id: string, name: string) => api.patch(`/folders/${id}`, { name }),
+  delete: (id: string) => api.delete(`/folders/${id}`),
 };

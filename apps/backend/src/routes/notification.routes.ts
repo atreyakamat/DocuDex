@@ -35,4 +35,17 @@ router.patch('/read-all', async (req: AuthRequest, res: Response, next: NextFunc
   } catch (err) { next(err); }
 });
 
+router.delete('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const result = await pool.query(
+      'DELETE FROM notifications WHERE id = $1 AND user_id = $2 RETURNING id',
+      [req.params.id, req.user!.userId]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ success: false, error: 'Notification not found' }); return;
+    }
+    res.json({ success: true, message: 'Notification deleted' });
+  } catch (err) { next(err); }
+});
+
 export default router;

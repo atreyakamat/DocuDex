@@ -12,7 +12,7 @@ import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/documents', icon: FileText, label: 'Documents' },
   { to: '/workflows', icon: GitBranch, label: 'Workflows' },
   { to: '/settings', icon: Settings, label: 'Settings' },

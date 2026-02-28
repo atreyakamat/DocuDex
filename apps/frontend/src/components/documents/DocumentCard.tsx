@@ -4,9 +4,10 @@ import {
   Image,
   FileSpreadsheet,
   Star,
-  MoreVertical,
   Download,
   Trash2,
+  Eye,
+  Share2,
 } from 'lucide-react';
 import { formatDate, formatFileSize, formatDocumentType } from '@/utils/format';
 import type { Document } from '@docudex/shared-types';
@@ -27,21 +28,30 @@ function FileIcon({ mimeType }: { mimeType: string }) {
 
 interface Props {
   document: Document;
-  onStar?: (id: string, starred: boolean) => void;
+  onView?: (doc: Document) => void;
+  onStar?: (doc: Document) => void;
+  onShare?: (doc: Document) => void;
   onDelete?: (id: string) => void;
   onDownload?: (id: string) => void;
 }
 
-export default function DocumentCard({ document, onStar, onDelete, onDownload }: Props) {
+export default function DocumentCard({ document, onView, onStar, onShare, onDelete, onDownload }: Props) {
   return (
-    <div className="card p-4 hover:shadow-md transition-shadow group">
+    <div
+      className="card p-4 hover:shadow-md transition-shadow group cursor-pointer"
+      onClick={() => onView?.(document)}
+    >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <FileIcon mimeType={document.mimeType} />
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div
+          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
-            onClick={() => onStar?.(document.id, !document.isStarred)}
+            onClick={() => onStar?.(document)}
             className="p-1 hover:bg-gray-100 rounded"
+            title={document.isStarred ? 'Unstar' : 'Star'}
           >
             <Star
               className={cn(
@@ -51,14 +61,23 @@ export default function DocumentCard({ document, onStar, onDelete, onDownload }:
             />
           </button>
           <button
+            onClick={() => onShare?.(document)}
+            className="p-1 hover:bg-gray-100 rounded"
+            title="Share"
+          >
+            <Share2 className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+          </button>
+          <button
             onClick={() => onDownload?.(document.id)}
             className="p-1 hover:bg-gray-100 rounded"
+            title="Download"
           >
             <Download className="h-4 w-4 text-gray-400 hover:text-gray-600" />
           </button>
           <button
             onClick={() => onDelete?.(document.id)}
             className="p-1 hover:bg-gray-100 rounded"
+            title="Delete"
           >
             <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-500" />
           </button>
@@ -73,6 +92,13 @@ export default function DocumentCard({ document, onStar, onDelete, onDownload }:
       {document.metadata.documentType && (
         <p className="text-xs text-gray-500 mb-2">
           {formatDocumentType(document.metadata.documentType)}
+        </p>
+      )}
+
+      {/* AI Summary snippet */}
+      {document.metadata.summary && (
+        <p className="text-xs text-gray-500 line-clamp-2 mb-1" title={document.metadata.summary.replace(/\*\*/g, '')}>
+          {document.metadata.summary.replace(/\*\*/g, '').slice(0, 100)}…
         </p>
       )}
 
@@ -98,6 +124,12 @@ export default function DocumentCard({ document, onStar, onDelete, onDownload }:
 
       {/* Upload date */}
       <p className="text-xs text-gray-400 mt-1">{formatDate(document.createdAt)}</p>
+
+      {/* View hint */}
+      <div className="mt-3 pt-2 border-t border-gray-100 flex items-center gap-1 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Eye className="h-3 w-3" />
+        Click to view
+      </div>
     </div>
   );
 }

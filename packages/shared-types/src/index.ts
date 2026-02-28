@@ -81,6 +81,7 @@ export interface DocumentMetadata {
   tags?: string[];
   extractedFields?: Record<string, string>;
   classificationConfidence?: number;
+  summary?: string;
 }
 
 export interface Document {
@@ -179,6 +180,32 @@ export interface Notification {
 }
 
 // ─────────────────────────────────────────────
+// Folder types
+// ─────────────────────────────────────────────
+export interface Folder {
+  id: string;
+  userId: string;
+  name: string;
+  parentId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─────────────────────────────────────────────
+// Document sharing types
+// ─────────────────────────────────────────────
+export interface DocumentShare {
+  id: string;
+  documentId: string;
+  userId: string;
+  token: string;
+  expiresAt: string;
+  accessCount: number;
+  recipientEmail?: string;
+  createdAt: string;
+}
+
+// ─────────────────────────────────────────────
 // API Response types
 // ─────────────────────────────────────────────
 export interface ApiResponse<T = unknown> {
@@ -212,9 +239,15 @@ export interface ExtractionResult {
   processingTime: number;
 }
 
+export interface SummaryResult {
+  text: string;
+  generatedAt: string;
+}
+
 export interface AIProcessingResult {
   classification: ClassificationResult;
   extraction: ExtractionResult;
+  summary?: string;
   validationErrors?: string[];
   processingStatus: 'success' | 'partial' | 'failed';
 }

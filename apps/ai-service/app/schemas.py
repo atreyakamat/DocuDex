@@ -45,4 +45,5 @@ class ExtractionResult(BaseModel):
 class AIProcessingResult(BaseModel):
     classification: ClassificationResult
     extraction: ExtractionResult
+    summary: Optional[str] = None
     processingTimeMs: int

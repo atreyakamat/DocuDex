@@ -80,6 +80,29 @@ export async function me(req: AuthRequest, res: Response, next: NextFunction): P
   }
 }
 
+export async function updateProfile(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await authService.updateProfile(req.user!.userId, req.body);
+    res.json({ success: true, data: { user } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function changePassword(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ success: false, error: 'currentPassword and newPassword are required' });
+      return;
+    }
+    await authService.changePassword(req.user!.userId, currentPassword, newPassword);
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function sendVerificationOtp(
   req: AuthRequest,
   res: Response,

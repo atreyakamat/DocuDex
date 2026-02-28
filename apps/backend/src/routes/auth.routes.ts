@@ -5,6 +5,8 @@ import {
   refresh,
   logout,
   me,
+  updateProfile,
+  changePassword,
   sendVerificationOtp,
   verifyOtp,
   registerValidation,
@@ -19,6 +21,8 @@ router.post('/login', loginValidation, login);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 router.get('/me', authenticate, me);
+router.put('/profile', authenticate, updateProfile);
+router.post('/change-password', authenticate, changePassword);
 router.post('/verify/send', authenticate, sendVerificationOtp);
 router.post('/verify/confirm', authenticate, verifyOtp);
 

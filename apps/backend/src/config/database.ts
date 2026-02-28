@@ -90,6 +90,7 @@ export async function initializeDatabase(): Promise<void> {
         tags TEXT[],
         extracted_fields JSONB DEFAULT '{}',
         classification_confidence FLOAT,
+        summary TEXT,
         is_starred BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -146,6 +147,20 @@ export async function initializeDatabase(): Promise<void> {
     `);
 
     // Indexes for performance
+    // Document shares table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS document_shares (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token VARCHAR(64) UNIQUE NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        access_count INTEGER NOT NULL DEFAULT 0,
+        recipient_email VARCHAR(255),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
     await client.query(`CREATE INDEX IF NOT EXISTS idx_documents_user_id ON documents(user_id);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category);`);

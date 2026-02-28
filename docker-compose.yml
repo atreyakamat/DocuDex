@@ -37,8 +37,8 @@ services:
   # ─── Application Services ─────────────────────────────
   backend:
     build:
-      context: ./apps/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/backend/Dockerfile
     container_name: docudex-backend
     restart: unless-stopped
     ports:
@@ -75,8 +75,8 @@ services:
 
   frontend:
     build:
-      context: ./apps/frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/frontend/Dockerfile
       args:
         VITE_API_URL: http://localhost:5000
     container_name: docudex-frontend
