@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Search, Filter, Loader2, X } from 'lucide-react';
+import { Upload, Search, Filter, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { documentsApi } from '@/services/api';
 import DocumentGrid from '@/components/documents/DocumentGrid';
@@ -8,6 +8,8 @@ import UploadZone from '@/components/documents/UploadZone';
 import DocumentViewer from '@/components/documents/DocumentViewer';
 import ShareDialog from '@/components/documents/ShareDialog';
 import { toast } from '@/store/toastStore';
+import { DocumentCardSkeleton } from '@/components/ui/Skeleton';
+import { NoDocuments, NoSearchResults } from '@/components/ui/EmptyStates';
 import type { Document } from '@docudex/shared-types';
 
 const CATEGORIES = ['ALL', 'IDENTITY', 'FINANCIAL', 'EDUCATIONAL', 'PROPERTY', 'BUSINESS', 'UTILITY', 'OTHER'];
@@ -142,9 +144,11 @@ export default function Documents() {
 
       {/* Grid */}
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-300" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <DocumentCardSkeleton key={i} />)}
         </div>
+      ) : documents.length === 0 ? (
+        hasFilters ? <NoSearchResults /> : <NoDocuments onUpload={() => setShowUpload(true)} />
       ) : (
         <div data-tour="document-grid">
         <DocumentGrid

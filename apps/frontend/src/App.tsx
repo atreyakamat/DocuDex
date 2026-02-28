@@ -11,6 +11,8 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import NotFound from '@/pages/NotFound';
 import ToastContainer from '@/components/ui/Toast';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 /** Redirect authenticated users away from login/register */
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -26,32 +28,33 @@ function ProtectedLayout() {
 
 export default function App() {
   const { initAuth } = useAuthStore();
+  useNetworkStatus();
 
   useEffect(() => {
     initAuth();
   }, [initAuth]);
 
   return (
-    <>
+    <ErrorBoundary>
       <ToastContainer />
       <Routes>
-      {/* Landing page — always public */}
-      <Route path="/" element={<Landing />} />
+        {/* Landing page — always public */}
+        <Route path="/" element={<Landing />} />
 
-      {/* Auth pages — redirect away if already logged in */}
-      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        {/* Auth pages — redirect away if already logged in */}
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
-      {/* App shell — all routes below require authentication */}
-      <Route element={<ProtectedLayout />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/documents" element={<Documents />} />
-        <Route path="/workflows" element={<Workflows />} />
-        <Route path="/settings" element={<Settings />} />
-      </Route>
+        {/* App shell — all routes below require authentication */}
+        <Route element={<ProtectedLayout />}>
+          <Route path="/dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+          <Route path="/documents" element={<ErrorBoundary><Documents /></ErrorBoundary>} />
+          <Route path="/workflows" element={<ErrorBoundary><Workflows /></ErrorBoundary>} />
+          <Route path="/settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
+        </Route>
 
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-    </>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }

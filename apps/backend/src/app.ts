@@ -8,6 +8,7 @@ import { config } from './config/env';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import routes from './routes';
 import { logger } from './utils/logger';
+import { pool } from './config/database';
 
 const app = express();
 
@@ -56,8 +57,40 @@ app.use(
 app.use('/uploads', express.static(config.storage.uploadDir));
 
 // ─── Health check ────────────────────────────
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), env: config.nodeEnv });
+app.get('/health', async (_req, res) => {
+  const checks: Record<string, string> = { api: 'ok' };
+  let overall = true;
+
+  // Database check
+  try {
+    const r = await pool.query('SELECT 1 as ok');
+    checks.database = r.rows.length ? 'ok' : 'error';
+  } catch {
+    checks.database = 'error';
+    overall = false;
+  }
+
+  // Redis check (optional)
+  try {
+    const { redis } = await import('./config/redis');
+    if (redis) {
+      const pong = await redis.ping();
+      checks.redis = pong === 'PONG' ? 'ok' : 'error';
+    } else {
+      checks.redis = 'not_configured';
+    }
+  } catch {
+    checks.redis = 'not_configured';
+  }
+
+  const status = overall ? 200 : 503;
+  res.status(status).json({
+    status: overall ? 'healthy' : 'degraded',
+    timestamp: new Date().toISOString(),
+    env: config.nodeEnv,
+    uptime: Math.floor(process.uptime()),
+    checks,
+  });
 });
 
 // ─── API routes ──────────────────────────────

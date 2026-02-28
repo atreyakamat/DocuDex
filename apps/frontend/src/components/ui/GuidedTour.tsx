@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTourStore } from '../../store/tourStore';
 
 interface Rect {
@@ -168,67 +168,69 @@ export default function GuidedTour() {
       {/* Tooltip */}
       <div
         ref={tooltipRef}
-        className="absolute w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-5 transition-all duration-300"
+        className="absolute w-[360px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transition-all duration-300"
         style={tooltipStyle}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
+        {/* Header with gradient */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-blue-500" />
-            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+            {step.icon && <span className="text-base">{step.icon}</span>}
+            <span className="text-xs font-medium text-white/80">
               Step {currentStep + 1} of {steps.length}
             </span>
           </div>
           <button
             onClick={skipTour}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="text-white/60 hover:text-white transition-colors"
             aria-label="Skip tour"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Content */}
-        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1.5">
-          {step.title}
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
-          {step.content}
-        </p>
+        <div className="p-5">
+          {/* Content */}
+          <h3 className="text-base font-bold text-gray-900 mb-2">
+            {step.title}
+          </h3>
+          <div className="text-sm text-gray-600 leading-relaxed mb-4 whitespace-pre-line">
+            {step.content}
+          </div>
 
-        {/* Progress bar */}
-        <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-4">
-          <div
-            className="h-1 bg-blue-500 rounded-full transition-all duration-300"
-            style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-          />
-        </div>
+          {/* Progress bar */}
+          <div className="w-full h-1.5 bg-gray-100 rounded-full mb-4">
+            <div
+              className="h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+            />
+          </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={skipTour}
-            className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            Skip tour
-          </button>
-          <div className="flex gap-2">
-            {!isFirst && (
-              <button
-                onClick={prevStep}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                <ChevronLeft className="w-3 h-3" />
-                Back
-              </button>
-            )}
+          {/* Actions */}
+          <div className="flex items-center justify-between">
             <button
-              onClick={nextStep}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={skipTour}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
             >
-              {isLast ? 'Finish' : 'Next'}
-              {!isLast && <ChevronRight className="w-3 h-3" />}
+              Skip tour
             </button>
+            <div className="flex gap-2">
+              {!isFirst && (
+                <button
+                  onClick={prevStep}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                  Back
+                </button>
+              )}
+              <button
+                onClick={nextStep}
+                className="flex items-center gap-1 px-4 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                {isLast ? '✅ Finish Tour' : 'Next'}
+                {!isLast && <ChevronRight className="w-3 h-3" />}
+              </button>
+            </div>
           </div>
         </div>
       </div>

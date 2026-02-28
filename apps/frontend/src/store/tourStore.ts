@@ -11,14 +11,19 @@ export interface TourStep {
   placement?: 'top' | 'bottom' | 'left' | 'right';
   /** Optional route to navigate to before showing step */
   route?: string;
+  /** Emoji icon for the step */
+  icon?: string;
 }
 
 interface TourState {
   isActive: boolean;
+  showWelcome: boolean;
   currentStep: number;
   hasCompletedTour: boolean;
   steps: TourStep[];
 
+  openWelcome: () => void;
+  closeWelcome: () => void;
   startTour: () => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -30,97 +35,109 @@ interface TourState {
 const TOUR_STEPS: TourStep[] = [
   {
     target: '[data-tour="sidebar"]',
-    title: 'Navigation Sidebar',
+    title: 'Your Command Center',
     content:
-      'This is your main navigation. Access Dashboard, Documents, Workflows, and Settings from here.',
+      'This sidebar is your primary navigation hub. From here you can access every part of DocuDex — your Dashboard for an overview, Documents for your full library, Workflows for guided checklists, and Settings for preferences.',
     placement: 'right',
     route: '/dashboard',
+    icon: '🧭',
   },
   {
     target: '[data-tour="sidebar-dashboard"]',
-    title: 'Dashboard',
+    title: 'Dashboard — Your Overview',
     content:
-      'Your Dashboard gives you a quick overview — total documents, upcoming expirations, and recent activity.',
+      'The Dashboard is the first thing you see after logging in. It shows your document stats, recently uploaded files, and any documents approaching their expiry date — all at a glance.',
     placement: 'right',
     route: '/dashboard',
+    icon: '📊',
   },
   {
     target: '[data-tour="stats-cards"]',
-    title: 'Document Statistics',
+    title: 'Real-Time Statistics',
     content:
-      'See at a glance how many documents you have, how many are valid, and which ones need attention.',
+      'These cards give you live numbers: total documents in your vault, how many are currently valid, how many are expiring within 90 days, and how many have already expired. They update automatically.',
     placement: 'bottom',
     route: '/dashboard',
+    icon: '📈',
   },
   {
     target: '[data-tour="recent-docs"]',
-    title: 'Recent Documents',
+    title: 'Recent Activity Feed',
     content:
-      'Your most recently uploaded documents appear here for quick access.',
+      'Your most recently uploaded and processed documents appear here. Each entry shows the AI-detected document type, upload time, and current validity status. Click "View all" to see everything.',
     placement: 'top',
     route: '/dashboard',
+    icon: '🕐',
   },
   {
     target: '[data-tour="expiry-alerts"]',
-    title: 'Expiry Alerts',
+    title: 'Never Miss an Expiry',
     content:
-      'Never miss a renewal! Documents expiring soon are highlighted here with countdown timers.',
+      'DocuDex runs a nightly check on all your documents. Anything expiring within 90 days appears here with a countdown. You also get in-app notifications at 30 days and 7 days before expiry so you have time to renew.',
     placement: 'left',
     route: '/dashboard',
+    icon: '⏰',
   },
   {
     target: '[data-tour="search-bar"]',
-    title: 'Search',
+    title: 'Intelligent Search',
     content:
-      'Quickly find any document by name, type, or holder. The AI indexes everything for you.',
+      'Search across your entire vault by document name, type, holder name, or any extracted field. The AI indexes all OCR-extracted text, so even content inside scanned images is searchable.',
     placement: 'bottom',
+    icon: '🔍',
   },
   {
     target: '[data-tour="notifications"]',
-    title: 'Notifications',
+    title: 'Stay Informed',
     content:
-      'Stay informed about document expirations, processing status, and workflow updates.',
+      'The notification bell shows real-time alerts — document processing complete, expiry warnings, workflow status changes, and system messages. Unread notifications show a red badge. Click to see details.',
     placement: 'bottom',
+    icon: '🔔',
   },
   {
     target: '[data-tour="sidebar-documents"]',
-    title: 'Documents Library',
+    title: 'Your Document Library',
     content:
-      'All your documents live here. Upload, view, share, and manage them in one place.',
+      'This is where all your documents live. The library supports filtering by category (Identity, Financial, Educational, etc.), status (Current, Expiring, Expired), and free-text search. You can star important documents for quick access.',
     placement: 'right',
     route: '/documents',
+    icon: '📁',
   },
   {
     target: '[data-tour="upload-zone"]',
-    title: 'Upload Documents',
+    title: 'How Uploading Works',
     content:
-      'Drag & drop files here or click to browse. Our AI will automatically classify, extract key data, and generate a summary.',
+      'Click here to upload. You can drag & drop files (PDF, JPG, PNG, DOCX up to 50 MB each). Here\'s what happens behind the scenes:\n\n1️⃣ File is saved securely\n2️⃣ OCR extracts all text\n3️⃣ AI classifies the document type\n4️⃣ Key fields (name, ID number, dates) are extracted\n5️⃣ A concise summary is generated\n\nAll of this happens automatically in seconds.',
     placement: 'bottom',
     route: '/documents',
+    icon: '📤',
   },
   {
     target: '[data-tour="document-grid"]',
-    title: 'Document Grid',
+    title: 'Browse & Manage',
     content:
-      'Browse all your documents. Each card shows the type, status, holder name, and expiry info at a glance.',
+      'Each card shows the document type badge, holder name, status indicator (green = valid, yellow = expiring, red = expired), and AI-generated summary. Click a card to view full details, download, share with a time-limited link, or delete.',
     placement: 'top',
     route: '/documents',
+    icon: '🗂️',
   },
   {
     target: '[data-tour="sidebar-workflows"]',
-    title: 'Workflows',
+    title: 'Guided Workflows',
     content:
-      'Use guided workflows to collect all documents needed for common tasks like loan applications or passport renewal.',
+      'Workflows are step-by-step checklists for real-world tasks. For example, the "Home Loan" workflow tells you that you need Aadhaar, PAN, 6 months of bank statements, salary slips, property deed, and ITR returns. Start a workflow and DocuDex tracks your progress.',
     placement: 'right',
     route: '/workflows',
+    icon: '📋',
   },
   {
     target: '[data-tour="sidebar-settings"]',
-    title: 'Settings',
+    title: 'Your Preferences',
     content:
-      'Configure your profile, notification preferences, and security settings.',
+      'Update your profile (name, email), change your password, and configure notification preferences. Your account is secured with JWT tokens that rotate automatically, and sessions can be invalidated instantly.',
     placement: 'right',
     route: '/settings',
+    icon: '⚙️',
   },
 ];
 
@@ -128,11 +145,15 @@ const STORAGE_KEY = 'docudex-tour-completed';
 
 export const useTourStore = create<TourState>((set) => ({
   isActive: false,
+  showWelcome: false,
   currentStep: 0,
   hasCompletedTour: localStorage.getItem(STORAGE_KEY) === 'true',
   steps: TOUR_STEPS,
 
-  startTour: () => set({ isActive: true, currentStep: 0 }),
+  openWelcome: () => set({ showWelcome: true }),
+  closeWelcome: () => set({ showWelcome: false }),
+
+  startTour: () => set({ isActive: true, showWelcome: false, currentStep: 0 }),
 
   nextStep: () =>
     set((state) => {
@@ -151,13 +172,13 @@ export const useTourStore = create<TourState>((set) => ({
 
   skipTour: () => {
     localStorage.setItem(STORAGE_KEY, 'true');
-    set({ isActive: false, currentStep: 0, hasCompletedTour: true });
+    set({ isActive: false, showWelcome: false, currentStep: 0, hasCompletedTour: true });
   },
 
   endTour: () => set({ isActive: false, currentStep: 0 }),
 
   resetTour: () => {
     localStorage.removeItem(STORAGE_KEY);
-    set({ isActive: false, currentStep: 0, hasCompletedTour: false });
+    set({ isActive: false, showWelcome: false, currentStep: 0, hasCompletedTour: false });
   },
 }));

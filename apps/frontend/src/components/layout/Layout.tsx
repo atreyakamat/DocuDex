@@ -3,15 +3,16 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import GuidedTour from '../ui/GuidedTour';
+import WelcomeModal from '../ui/WelcomeModal';
 import { useTourStore } from '@/store/tourStore';
 
 export default function Layout() {
-  const { hasCompletedTour, startTour, isActive } = useTourStore();
+  const { hasCompletedTour, openWelcome, isActive, showWelcome } = useTourStore();
 
-  // Auto-start tour for first-time users after a short delay
+  // Auto-show welcome modal for first-time users
   useEffect(() => {
-    if (!hasCompletedTour && !isActive) {
-      const t = setTimeout(startTour, 1500);
+    if (!hasCompletedTour && !isActive && !showWelcome) {
+      const t = setTimeout(openWelcome, 1200);
       return () => clearTimeout(t);
     }
   }, []); // only on mount
@@ -27,6 +28,7 @@ export default function Layout() {
           </div>
         </main>
       </div>
+      <WelcomeModal />
       <GuidedTour />
     </div>
   );

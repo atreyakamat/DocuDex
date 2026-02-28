@@ -5,13 +5,14 @@ import {
   CheckCircle,
   Clock,
   TrendingUp,
-  Loader2,
 } from 'lucide-react';
 import { documentsApi } from '@/services/api';
 import { formatRelative, getExpiryStatusColor, daysUntilExpiry, formatDocumentType } from '@/utils/format';
 import { useAuthStore } from '@/store/authStore';
 import { Link } from 'react-router-dom';
 import type { Document } from '@docudex/shared-types';
+import { StatCardSkeleton, DocumentRowSkeleton } from '@/components/ui/Skeleton';
+import { NoRecentDocs, NoExpiringDocs } from '@/components/ui/EmptyStates';
 
 export default function Dashboard() {
   const { user } = useAuthStore();
@@ -75,17 +76,15 @@ export default function Dashboard() {
 
       {/* Stat cards */}
       <div data-tour="stats-cards" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((card) => (
+        {statsLoading
+          ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+          : statCards.map((card) => (
           <div key={card.label} className="card flex items-center gap-4">
             <div className={`p-3 rounded-xl ${card.color}`}>
               <card.icon className="h-6 w-6" />
             </div>
             <div>
-              {statsLoading ? (
-                <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
-              ) : (
-                <p className="text-2xl font-bold text-gray-900">{card.value}</p>
-              )}
+              <p className="text-2xl font-bold text-gray-900">{card.value}</p>
               <p className="text-sm text-gray-500">{card.label}</p>
             </div>
           </div>
@@ -102,11 +101,11 @@ export default function Dashboard() {
             </Link>
           </div>
           {recentLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => <DocumentRowSkeleton key={i} />)}
             </div>
           ) : recentDocs.length === 0 ? (
-            <p className="text-sm text-gray-500 py-6 text-center">No documents yet.</p>
+            <NoRecentDocs />
           ) : (
             <div className="space-y-3">
               {recentDocs.map((doc) => (
@@ -144,9 +143,7 @@ export default function Dashboard() {
             <h2 className="font-semibold text-gray-900">Expiry Alerts</h2>
           </div>
           {expiringDocs.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4 text-center">
-              No documents expiring soon. 🎉
-            </p>
+            <NoExpiringDocs />
           ) : (
             <div className="space-y-3">
               {expiringDocs.map((doc) => {

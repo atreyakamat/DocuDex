@@ -165,8 +165,17 @@ export async function initializeDatabase(): Promise<void> {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_documents_expiry ON documents(expiry_date);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_documents_created_at ON documents(created_at DESC);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_documents_type ON documents(document_type);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_documents_holder ON documents(holder_name);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_documents_starred ON documents(user_id, is_starred) WHERE is_starred = true;`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, is_read) WHERE is_read = false;`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_document_shares_token ON document_shares(token);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_workflow_instances_user ON workflow_instances(user_id);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_folders_user ON folders(user_id);`);
 
     await client.query('COMMIT');
     logger.info('✅ Database schema initialized');
