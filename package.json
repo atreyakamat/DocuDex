@@ -12,6 +12,8 @@
     "dev:frontend": "npm run dev --workspace=apps/frontend",
     "dev:backend": "npm run dev --workspace=apps/backend",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "start:local": "node -e \"const p=process.platform;const {execSync}=require('child_process');if(p==='win32'){execSync('powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1',{stdio:'inherit'})}else{execSync('bash scripts/start-local.sh',{stdio:'inherit'})}\"",
+    "seed:demo": "node scripts/seed-demo.js",
     "build:frontend": "npm run build --workspace=apps/frontend",
     "build:backend": "npm run build --workspace=apps/backend",
     "build": "npm run build:backend && npm run build:frontend",

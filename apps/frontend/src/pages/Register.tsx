@@ -102,10 +102,14 @@ export default function Register() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   className="input pr-10"
-                  placeholder="Min 8 characters"
+                  placeholder="Min 8 chars, e.g. Secret@1"
                   {...register('password', {
                     required: 'Password is required',
                     minLength: { value: 8, message: 'Minimum 8 characters' },
+                    pattern: {
+                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
+                      message: 'Must include uppercase, lowercase, number and a special character (@$!%*?&)',
+                    },
                   })}
                 />
                 <button
@@ -116,8 +120,10 @@ export default function Register() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {errors.password && (
+              {errors.password ? (
                 <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">Min 8 chars · uppercase · lowercase · number · special (@$!%*?&)</p>
               )}
             </div>
 
