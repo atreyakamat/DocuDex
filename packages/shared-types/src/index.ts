@@ -32,8 +32,10 @@ export interface RegisterRequest {
 }
 
 export interface AuthResponse {
-  user: User;
-  tokens: AuthTokens;
+  user?: User;
+  tokens?: AuthTokens;
+  requiresMfa?: boolean;
+  mfaToken?: string;
 }
 
 // ─────────────────────────────────────────────

@@ -3,7 +3,7 @@ import { verifyToken, JwtPayload } from '../utils/jwt';
 import { logger } from '../utils/logger';
 
 export interface AuthRequest extends Request {
-  user?: JwtPayload;
+  user?: any; // any is used to merge with Express.User from Passport
 }
 
 export function authenticate(req: AuthRequest, res: Response, next: NextFunction): void {

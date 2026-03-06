@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import passport from 'passport';
 import { config } from './config/env';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import routes from './routes';
@@ -22,6 +23,8 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
+app.use(passport.initialize());
 
 // ─── Rate limiting ───────────────────────────
 const limiter = rateLimit({

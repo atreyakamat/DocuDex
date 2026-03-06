@@ -44,16 +44,34 @@ export async function initializeDatabase(): Promise<void> {
         email VARCHAR(255) UNIQUE NOT NULL,
         phone VARCHAR(20),
         full_name VARCHAR(255) NOT NULL,
-        password_hash VARCHAR(255) NOT NULL,
+        password_hash VARCHAR(255),
         role VARCHAR(20) NOT NULL DEFAULT 'user',
         is_email_verified BOOLEAN NOT NULL DEFAULT false,
         is_phone_verified BOOLEAN NOT NULL DEFAULT false,
         mfa_enabled BOOLEAN NOT NULL DEFAULT false,
         mfa_secret VARCHAR(255),
+        oauth_provider VARCHAR(50),
+        oauth_id VARCHAR(255),
         refresh_token_hash VARCHAR(255),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+    `);
+
+    // Alter table for existing dbs
+    await client.query(`
+      DO $$
+      BEGIN
+        BEGIN
+          ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+        EXCEPTION WHEN OTHERS THEN NULL; END;
+        BEGIN
+          ALTER TABLE users ADD COLUMN oauth_provider VARCHAR(50);
+        EXCEPTION WHEN duplicate_column THEN NULL; END;
+        BEGIN
+          ALTER TABLE users ADD COLUMN oauth_id VARCHAR(255);
+        EXCEPTION WHEN duplicate_column THEN NULL; END;
+      END $$;
     `);
 
     // Folders table

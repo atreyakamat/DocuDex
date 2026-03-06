@@ -123,16 +123,23 @@ export async function downloadDocument(
 ): Promise<void> {
   try {
     const document = await documentService.getDocumentById(req.params.id, req.user!.userId);
-    const filePath = path.join(config.storage.uploadDir, document.storageKey);
 
-    if (!fs.existsSync(filePath)) {
-      res.status(404).json({ success: false, error: 'File not found on server' });
-      return;
+    if (config.storage.type === 's3') {
+      const { getPresignedUrl } = await import('../services/s3.service');
+      const url = await getPresignedUrl(document.storageKey);
+      res.redirect(url);
+    } else {
+      const filePath = path.join(config.storage.uploadDir, document.storageKey);
+
+      if (!fs.existsSync(filePath)) {
+        res.status(404).json({ success: false, error: 'File not found on server' });
+        return;
+      }
+
+      res.setHeader('Content-Type', document.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
+      res.sendFile(path.resolve(filePath));
     }
-
-    res.setHeader('Content-Type', document.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
-    res.sendFile(path.resolve(filePath));
   } catch (error) {
     next(error);
   }

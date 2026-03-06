@@ -1,8 +1,10 @@
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+const { authenticator } = require('otplib');
+import QRCode from 'qrcode';
 import { pool } from '../config/database';
 import { redis, isRedisConnected } from '../config/redis';
-import { generateAccessToken, generateRefreshToken, verifyToken } from '../utils/jwt';
+import { generateAccessToken, generateRefreshToken, generateMfaToken, verifyToken } from '../utils/jwt';
 import { createError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import type { User, AuthResponse, LoginRequest, RegisterRequest } from '@docudex/shared-types';
@@ -57,9 +59,96 @@ export async function loginUser(data: LoginRequest): Promise<AuthResponse> {
   }
 
   const user = mapDbUser(row);
+
+  if (user.mfaEnabled) {
+    return {
+      requiresMfa: true,
+      mfaToken: generateMfaToken({ userId: user.id, email: user.email, role: user.role }),
+    };
+  }
+
   const tokens = await generateTokens(user);
 
   return { user, tokens };
+}
+
+export async function verifyMfaLogin(mfaToken: string, code: string): Promise<AuthResponse> {
+  let payload;
+  try {
+    payload = verifyToken(mfaToken);
+    if (!payload.isMfa) {
+      throw new Error();
+    }
+  } catch {
+    throw createError('Invalid or expired MFA token', 401);
+  }
+
+  const result = await pool.query(
+    `SELECT id, email, phone, full_name, role, is_email_verified, is_phone_verified,
+            mfa_enabled, mfa_secret, created_at, updated_at
+     FROM users WHERE id = $1`,
+    [payload.userId]
+  );
+
+  if (result.rows.length === 0) throw createError('User not found', 404);
+  const row = result.rows[0];
+
+  if (!row.mfa_enabled || !row.mfa_secret) {
+    throw createError('MFA is not enabled for this user', 400);
+  }
+
+  const isValid = authenticator.verify({ token: code, secret: row.mfa_secret });
+  if (!isValid) {
+    throw createError('Invalid MFA code', 401);
+  }
+
+  const user = mapDbUser(row);
+  const tokens = await generateTokens(user);
+  return { user, tokens };
+}
+
+export async function setupMFA(userId: string): Promise<{ qrCodeUrl: string; secret: string }> {
+  const result = await pool.query('SELECT email, mfa_enabled FROM users WHERE id = $1', [userId]);
+  if (result.rows.length === 0) throw createError('User not found', 404);
+  
+  const secret = authenticator.generateSecret();
+  const otpauthUrl = authenticator.keyuri(result.rows[0].email, 'DocuDex', secret);
+
+  await pool.query('UPDATE users SET mfa_secret = $1 WHERE id = $2', [secret, userId]);
+
+  const qrCodeUrl = await QRCode.toDataURL(otpauthUrl);
+  return { qrCodeUrl, secret };
+}
+
+export async function verifyMFASetup(userId: string, code: string): Promise<User> {
+  const result = await pool.query('SELECT mfa_secret FROM users WHERE id = $1', [userId]);
+  if (result.rows.length === 0) throw createError('User not found', 404);
+  
+  const secret = result.rows[0].mfa_secret;
+  if (!secret) throw createError('MFA setup not initialized', 400);
+
+  const isValid = authenticator.verify({ token: code, secret });
+  if (!isValid) throw createError('Invalid MFA code', 400);
+
+  const updateResult = await pool.query(
+    `UPDATE users SET mfa_enabled = true, updated_at = NOW()
+     WHERE id = $1
+     RETURNING id, email, phone, full_name, role, is_email_verified, is_phone_verified, mfa_enabled, created_at, updated_at`,
+    [userId]
+  );
+
+  return mapDbUser(updateResult.rows[0]);
+}
+
+export async function disableMFA(userId: string): Promise<User> {
+  const updateResult = await pool.query(
+    `UPDATE users SET mfa_enabled = false, mfa_secret = NULL, updated_at = NOW()
+     WHERE id = $1
+     RETURNING id, email, phone, full_name, role, is_email_verified, is_phone_verified, mfa_enabled, created_at, updated_at`,
+    [userId]
+  );
+  if (updateResult.rows.length === 0) throw createError('User not found', 404);
+  return mapDbUser(updateResult.rows[0]);
 }
 
 export async function refreshAccessToken(

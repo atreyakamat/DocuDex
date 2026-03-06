@@ -2,6 +2,10 @@ import { Router } from 'express';
 import {
   register,
   login,
+  verifyMfaLogin,
+  setupMFA,
+  verifyMFASetup,
+  disableMFA,
   refresh,
   logout,
   me,
@@ -18,6 +22,13 @@ const router = Router();
 
 router.post('/register', registerValidation, register);
 router.post('/login', loginValidation, login);
+router.post('/login/mfa', verifyMfaLogin);
+
+// MFA Setup
+router.post('/mfa/setup', authenticate, setupMFA);
+router.post('/mfa/verify', authenticate, verifyMFASetup);
+router.post('/mfa/disable', authenticate, disableMFA);
+
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 router.get('/me', authenticate, me);

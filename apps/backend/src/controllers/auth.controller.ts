@@ -45,6 +45,52 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
+export async function verifyMfaLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { mfaToken, code } = req.body;
+    if (!mfaToken || !code) {
+      res.status(400).json({ success: false, error: 'mfaToken and code are required' });
+      return;
+    }
+    const result = await authService.verifyMfaLogin(mfaToken, code);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function setupMFA(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await authService.setupMFA(req.user!.userId);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function verifyMFASetup(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      res.status(400).json({ success: false, error: 'code is required' });
+      return;
+    }
+    const user = await authService.verifyMFASetup(req.user!.userId, code);
+    res.status(200).json({ success: true, data: { user } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function disableMFA(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await authService.disableMFA(req.user!.userId);
+    res.status(200).json({ success: true, data: { user } });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { refreshToken } = req.body;

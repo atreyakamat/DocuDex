@@ -1,28 +1,71 @@
 import axios from 'axios';
+import axiosRetry from 'axios-retry';
+import FormData from 'form-data';
+import fs from 'fs';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { Readable } from 'stream';
 import { pool } from '../config/database';
 import { config } from '../config/env';
 import { logger } from '../utils/logger';
+import { s3Client } from './s3.service';
 import type { AIProcessingResult } from '@docudex/shared-types';
+
+// Configure retry logic for AI service resilience
+axiosRetry(axios, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (error) => {
+    // Retry on network errors or 5xx status codes
+    return axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response?.status === 503;
+  },
+  onRetry: (retryCount, error, requestConfig) => {
+    logger.warn(`Retrying AI service request (attempt ${retryCount}) due to: ${error.message}`);
+  },
+});
 
 export async function processDocumentWithAI(
   documentId: string,
-  filePath: string,
-  _userId: string
+  storageKey: string,
+  _userId: string,
+  mimeType: string,
+  originalName: string
 ): Promise<void> {
   try {
     logger.info(`Starting AI processing for document ${documentId}`);
+
+    let fileStream: Readable;
+
+    if (config.storage.type === 's3') {
+      const command = new GetObjectCommand({
+        Bucket: config.aws.s3Bucket,
+        Key: storageKey,
+      });
+      const response = await s3Client.send(command);
+      fileStream = response.Body as Readable;
+    } else {
+      const filePath = config.storage.uploadDir + '/' + storageKey;
+      fileStream = fs.createReadStream(filePath);
+    }
+
+    const form = new FormData();
+    form.append('file', fileStream, {
+      filename: originalName,
+      contentType: mimeType,
+    });
 
     let result: AIProcessingResult;
     try {
       const response = await axios.post<AIProcessingResult>(
         `${config.aiService.url}/process`,
-        { documentId, filePath },
-        { timeout: 120000 }
+        form,
+        { 
+          headers: form.getHeaders(),
+          timeout: 120000 
+        }
       );
       result = response.data;
-    } catch (aiError) {
-      // Fallback: mark as current with minimal metadata if AI service is down
-      logger.warn(`AI service unavailable for ${documentId}, using fallback`);
+    } catch (aiError: any) {
+      logger.error(`AI service error for ${documentId}:`, aiError.message || aiError);
       result = {
         classification: { documentType: 'OTHER', category: 'OTHER', confidence: 0 },
         extraction: { fields: {}, processingTime: 0 },
@@ -53,7 +96,6 @@ export async function processDocumentWithAI(
       result.summary || null,
     ];
 
-    // Map known extracted fields to dedicated columns
     const holderName =
       extractedData.holderName?.value ||
       extractedData.name?.value ||
@@ -84,21 +126,9 @@ export async function processDocumentWithAI(
     });
   } catch (error) {
     logger.error(`AI processing failed for document ${documentId}:`, error);
-    // Set status to CURRENT even on failure so document is usable
     await pool.query(
       'UPDATE documents SET status = $1, updated_at = NOW() WHERE id = $2',
       ['CURRENT', documentId]
     );
   }
-}
-
-export async function classifyDocument(
-  filePath: string
-): Promise<AIProcessingResult> {
-  const response = await axios.post<AIProcessingResult>(
-    `${config.aiService.url}/process`,
-    { filePath },
-    { timeout: 60000 }
-  );
-  return response.data;
 }

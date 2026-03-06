@@ -23,7 +23,12 @@ async def process_document(file: UploadFile = File(...)):
     contents = await file.read()
 
     # 1. OCR
-    raw_text, ocr_confidence = extract_text(contents, file.content_type or "")
+    try:
+        raw_text, ocr_confidence = extract_text(contents, file.content_type or "")
+    except Exception as e:
+        if str(e) == "PASSWORD_PROTECTED":
+            raise HTTPException(status_code=422, detail="PASSWORD_PROTECTED")
+        raise HTTPException(status_code=500, detail=f"OCR processing failed: {str(e)}")
 
     # 2. Classify
     classification = classify_document(raw_text, file.filename or "")

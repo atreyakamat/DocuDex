@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import health, process
+from app.routes import health, process, validate
 
 app = FastAPI(
     title="DocuDex AI Service",
@@ -18,3 +18,4 @@ app.add_middleware(
 
 app.include_router(health.router, tags=["Health"])
 app.include_router(process.router, prefix="/process", tags=["Processing"])
+app.include_router(validate.router, prefix="/validate", tags=["Validation"])

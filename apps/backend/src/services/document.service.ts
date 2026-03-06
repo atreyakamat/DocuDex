@@ -5,6 +5,9 @@ import { pool } from '../config/database';
 import { createError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { processDocumentWithAI } from './ai.service';
+import { config } from '../config/env';
+import { deleteS3Object, uploadS3Object } from './s3.service';
+import { deleteDocumentIndex, searchDocuments } from './search.service';
 import type {
   Document,
   DocumentListResponse,
@@ -12,13 +15,25 @@ import type {
   DocumentMetadata,
 } from '@docudex/shared-types';
 
-export async function uploadDocument(
+export async function uploadDocumentFromBuffer(
   userId: string,
-  file: Express.Multer.File,
+  buffer: Buffer,
+  originalName: string,
+  mimeType: string,
   metadata?: Partial<DocumentMetadata>
 ): Promise<Document> {
   const id = uuidv4();
-  const storageKey = file.filename;
+  const ext = path.extname(originalName) || '';
+  const storageKey = `documents/${uuidv4()}${ext}`;
+
+  if (config.storage.type === 's3') {
+    await uploadS3Object(storageKey, buffer, mimeType);
+  } else {
+    const uploadPath = path.join(config.storage.uploadDir, storageKey);
+    const dir = path.dirname(uploadPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(uploadPath, buffer);
+  }
 
   const result = await pool.query(
     `INSERT INTO documents
@@ -29,7 +44,44 @@ export async function uploadDocument(
     [
       id,
       userId,
-      file.filename,
+      path.basename(storageKey),
+      originalName,
+      mimeType,
+      buffer.length,
+      storageKey,
+      metadata?.tags || [],
+    ]
+  );
+
+  const document = mapDbDocument(result.rows[0]);
+
+  // Trigger async AI processing (fire & forget)
+  processDocumentWithAI(id, storageKey, userId, mimeType, originalName).catch((err) =>
+    logger.error('AI processing failed for document', { documentId: id, error: err.message })
+  );
+
+  return document;
+}
+
+export async function uploadDocument(
+  userId: string,
+  file: Express.Multer.File & { key?: string; location?: string },
+  metadata?: Partial<DocumentMetadata>
+): Promise<Document> {
+  const id = uuidv4();
+  const storageKey = file.key || file.filename;
+  const fileName = file.key ? file.key.split('/').pop() || file.originalname : file.filename;
+
+  const result = await pool.query(
+    `INSERT INTO documents
+       (id, user_id, file_name, original_name, mime_type, file_size, storage_key, status,
+        tags, extracted_fields)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'PROCESSING', $8, '{}')
+     RETURNING *`,
+    [
+      id,
+      userId,
+      fileName,
       file.originalname,
       file.mimetype,
       file.size,
@@ -41,7 +93,7 @@ export async function uploadDocument(
   const document = mapDbDocument(result.rows[0]);
 
   // Trigger async AI processing (fire & forget)
-  processDocumentWithAI(id, file.path, userId).catch((err) =>
+  processDocumentWithAI(id, storageKey, userId, file.mimetype, file.originalname).catch((err) =>
     logger.error('AI processing failed for document', { documentId: id, error: err.message })
   );
 
@@ -79,12 +131,19 @@ export async function getDocuments(
     conditions.push(`folder_id = $${paramIndex++}`);
     values.push(folderId);
   }
+
+  // If there's a search query, use Elasticsearch
   if (query.query) {
-    conditions.push(
-      `(original_name ILIKE $${paramIndex} OR holder_name ILIKE $${paramIndex} OR document_number ILIKE $${paramIndex})`
-    );
-    values.push(`%${query.query}%`);
-    paramIndex++;
+    const docIds = await searchDocuments(userId, query.query);
+    if (docIds.length > 0) {
+      conditions.push(`id = ANY($${paramIndex++})`);
+      values.push(docIds);
+    } else {
+      // Fallback or empty result
+      conditions.push(`(original_name ILIKE $${paramIndex} OR holder_name ILIKE $${paramIndex} OR document_number ILIKE $${paramIndex})`);
+      values.push(`%${query.query}%`);
+      paramIndex++;
+    }
   }
 
   const where = conditions.join(' AND ');
@@ -165,14 +224,24 @@ export async function deleteDocument(documentId: string, userId: string): Promis
 
   if (result.rows.length === 0) throw createError('Document not found', 404);
 
-  // Remove physical file
-  const storagePath = path.join(
-    process.env.UPLOAD_DIR || './uploads',
-    result.rows[0].storage_key
-  );
-  if (fs.existsSync(storagePath)) {
-    fs.unlinkSync(storagePath);
+  const storageKey = result.rows[0].storage_key;
+
+  if (config.storage.type === 's3') {
+    await deleteS3Object(storageKey).catch(err => {
+      logger.error(`Failed to delete S3 object ${storageKey}:`, err);
+    });
+  } else {
+    // Remove physical file
+    const storagePath = path.join(
+      process.env.UPLOAD_DIR || './uploads',
+      storageKey
+    );
+    if (fs.existsSync(storagePath)) {
+      fs.unlinkSync(storagePath);
+    }
   }
+
+  await deleteDocumentIndex(documentId);
 }
 
 export async function getDocumentStats(userId: string) {
@@ -216,7 +285,7 @@ export async function updateDocumentStatuses(): Promise<void> {
 }
 
 // ─── Private helpers ─────────────────────────
-function mapDbDocument(row: Record<string, unknown>): Document {
+export function mapDbDocument(row: Record<string, unknown>): Document {
   return {
     id: row.id as string,
     userId: row.user_id as string,

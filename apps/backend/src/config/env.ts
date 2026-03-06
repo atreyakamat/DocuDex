@@ -30,6 +30,14 @@ export const config = {
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '52428800', 10), // 50 MB
   },
 
+  aws: {
+    region: process.env.AWS_REGION || 'us-east-1',
+    s3Bucket: process.env.AWS_S3_BUCKET || '',
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+    endpoint: process.env.AWS_ENDPOINT || '', // For minio or localstack
+  },
+
   aiService: {
     url: process.env.AI_SERVICE_URL || 'http://localhost:8000',
   },

@@ -5,6 +5,7 @@ export interface JwtPayload {
   userId: string;
   email: string;
   role: string;
+  isMfa?: boolean;
 }
 
 export function generateAccessToken(payload: JwtPayload): string {
@@ -16,6 +17,12 @@ export function generateAccessToken(payload: JwtPayload): string {
 export function generateRefreshToken(payload: JwtPayload): string {
   return jwt.sign(payload, config.jwt.secret, {
     expiresIn: config.jwt.refreshExpiresIn as jwt.SignOptions['expiresIn'],
+  });
+}
+
+export function generateMfaToken(payload: JwtPayload): string {
+  return jwt.sign({ ...payload, isMfa: true }, config.jwt.secret, {
+    expiresIn: '5m', // MFA login token is valid for 5 mins
   });
 }
 
