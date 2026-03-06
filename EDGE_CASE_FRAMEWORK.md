@@ -51,6 +51,7 @@ To provide a resilient, user-friendly experience, DocuDex must gracefully handle
 ## 4. Implementation Checklist
 - [x] Redis fallback for Authentication (Implemented)
 - [x] S3 local fallback structure (Implemented)
-- [ ] Implement `axios-retry` on AI Service requests
-- [ ] Add password-protected PDF detection in Python AI Service
-- [ ] Create UI polling/WebSocket updates for asynchronous background AI extraction status changes.
+- [x] Implement `axios-retry` on AI Service requests (Implemented)
+- [x] Add password-protected PDF detection in Python AI Service (Implemented)
+- [x] Create 207 Multi-Status for Partial Batch Upload Failures (Implemented)
+- [x] Create UI polling/WebSocket updates for asynchronous background AI extraction status changes. (Implemented via Server-Sent Events)

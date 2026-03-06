@@ -13,7 +13,7 @@ def test_validate_consistency_match():
 def test_validate_consistency_name_mismatch():
     docs = [
         {"documentId": "1", "documentType": "AADHAAR", "fields": {"name": "John Doe", "dateOfBirth": "01/01/1990"}},
-        {"documentId": "2", "documentType": "PAN", "fields": {"name": "Johnny Doe", "dateOfBirth": "01/01/1990"}},
+        {"documentId": "2", "documentType": "PAN", "fields": {"name": "John Smith", "dateOfBirth": "01/01/1990"}},
     ]
     result = validate_consistency(docs)
     assert result["isConsistent"] is False

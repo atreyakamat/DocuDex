@@ -1,4 +1,12 @@
 from typing import List, Dict, Any
+import difflib
+
+def is_fuzzy_match(str1: str, str2: str, threshold: float = 0.85) -> bool:
+    if not str1 or not str2:
+        return False
+    # Use sequence matcher to get similarity ratio
+    ratio = difflib.SequenceMatcher(None, str1, str2).ratio()
+    return ratio >= threshold
 
 def validate_consistency(documents: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
@@ -20,17 +28,21 @@ def validate_consistency(documents: List[Dict[str, Any]]) -> Dict[str, Any]:
             name_val = name.get("value", name) if isinstance(name, dict) else name
             name_val = name_val.lower().strip()
             
-            if names_seen and name_val not in names_seen.values():
-                anomalies.append({
-                    "type": "NAME_MISMATCH",
-                    "description": f"Name mismatch detected in {doc_type} ({name_val}).",
-                    "documents": [doc_id] + list(names_seen.keys())
-                })
+            if names_seen:
+                # Check fuzzy match against all seen names
+                matched_any = any(is_fuzzy_match(name_val, seen_name) for seen_name in names_seen.values())
+                if not matched_any:
+                    anomalies.append({
+                        "type": "NAME_MISMATCH",
+                        "description": f"Name mismatch detected in {doc_type} ({name_val}).",
+                        "documents": [doc_id] + list(names_seen.keys())
+                    })
             names_seen[doc_id] = name_val
 
         dob = fields.get("dateOfBirth") or fields.get("dob")
         if dob:
             dob_val = dob.get("value", dob) if isinstance(dob, dict) else dob
+            # DOB should be an exact match or very close format match, but we can do exact for simplicity
             if dobs_seen and dob_val not in dobs_seen.values():
                 anomalies.append({
                     "type": "DOB_MISMATCH",

@@ -8,6 +8,7 @@ import {
   deleteDocument,
   downloadDocument,
   getStats,
+  getDocumentStatusStream,
 } from '../controllers/document.controller';
 import { authenticate } from '../middleware/auth';
 import { upload } from '../middleware/upload';
@@ -22,6 +23,7 @@ router.get('/', listDocuments);
 router.post('/upload', upload.single('file'), uploadDocument);
 router.post('/upload/bulk', upload.array('files', 10), uploadMultipleDocuments);
 router.get('/:id', getDocument);
+router.get('/:id/status/stream', getDocumentStatusStream);
 router.patch('/:id', updateDocument);
 router.delete('/:id', deleteDocument);
 router.get('/:id/download', downloadDocument);

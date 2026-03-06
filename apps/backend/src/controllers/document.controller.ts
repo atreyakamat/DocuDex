@@ -4,6 +4,7 @@ import fs from 'fs';
 import { AuthRequest } from '../middleware/auth';
 import * as documentService from '../services/document.service';
 import { config } from '../config/env';
+import { logger } from '../utils/logger';
 import type { DocumentSearchQuery } from '@docudex/shared-types';
 
 export async function uploadDocument(
@@ -39,11 +40,42 @@ export async function uploadMultipleDocuments(
       return;
     }
 
-    const documents = await Promise.all(
+    const results = await Promise.allSettled(
       files.map((file) => documentService.uploadDocument(req.user!.userId, file))
     );
 
-    res.status(201).json({ success: true, data: { documents } });
+    const successful = [];
+    const failed = [];
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        successful.push(result.value);
+      } else {
+        failed.push({
+          fileName: files[index].originalname,
+          error: result.reason?.message || 'Unknown error during upload',
+        });
+      }
+    });
+
+    if (failed.length > 0 && successful.length > 0) {
+      // Partial success
+      res.status(207).json({
+        success: true,
+        message: 'Some documents failed to upload',
+        data: { documents: successful, failed },
+      });
+    } else if (failed.length > 0 && successful.length === 0) {
+      // All failed
+      res.status(500).json({
+        success: false,
+        error: 'All document uploads failed',
+        details: failed,
+      });
+    } else {
+      // All successful
+      res.status(201).json({ success: true, data: { documents: successful } });
+    }
   } catch (error) {
     next(error);
   }
@@ -153,6 +185,62 @@ export async function getStats(
   try {
     const stats = await documentService.getDocumentStats(req.user!.userId);
     res.status(200).json({ success: true, data: { stats } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getDocumentStatusStream(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const documentId = req.params.id;
+    const userId = req.user!.userId;
+
+    // Verify document exists and belongs to user
+    const doc = await documentService.getDocumentById(documentId, userId);
+
+    // Setup Server-Sent Events
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders(); // flush the headers to establish SSE
+
+    // Send initial state
+    res.write(`data: ${JSON.stringify({ status: doc.status })}\n\n`);
+
+    if (doc.status !== 'PROCESSING') {
+      res.write('event: complete\ndata: {}\n\n');
+      res.end();
+      return;
+    }
+
+    // Polling the database every 2 seconds for updates
+    // In a production system, this should be replaced with Redis Pub/Sub or similar event emitter
+    const interval = setInterval(async () => {
+      try {
+        const updatedDoc = await documentService.getDocumentById(documentId, userId);
+        
+        if (updatedDoc.status !== 'PROCESSING') {
+          res.write(`data: ${JSON.stringify({ status: updatedDoc.status })}\n\n`);
+          res.write('event: complete\ndata: {}\n\n');
+          clearInterval(interval);
+          res.end();
+        }
+      } catch (error) {
+        logger.error(`SSE polling error for doc ${documentId}:`, error);
+        clearInterval(interval);
+        res.end();
+      }
+    }, 2000);
+
+    // Clean up on client disconnect
+    req.on('close', () => {
+      clearInterval(interval);
+      res.end();
+    });
   } catch (error) {
     next(error);
   }
